@@ -38,7 +38,8 @@ route53_zone_name      = "example.com"
 vault_domain           = "vault.example.com"
 ```
 
-Mark `vault_enterprise_license` as **sensitive** if using Enterprise edition.
+> [!IMPORTANT]
+> All variables must be set as **terraform** category, not `env`. `allowed_cidr_blocks` must use **HCL** type. `vault_enterprise_license` must be marked **sensitive**.
 
 ### 2. Trigger a run
 
@@ -46,13 +47,19 @@ Push to `main` or trigger a run manually in HCP Terraform. The workspace is conn
 
 ### 3. Initialize Vault (first deploy only)
 
-After apply completes, initialize Vault using the helper script:
+After apply completes, Vault is running but **not yet initialized** — this is expected. The ALB will return 502 until initialization is complete. Run the helper script from your local machine:
 
 ```bash
 ./scripts/init-vault.sh
 ```
 
-This connects to the instance over SSH, runs `vault operator init`, and writes bootstrap output to `.secrets/`.
+This connects to the instance over SSH, runs `vault operator init`, and writes the output to `.secrets/`. KMS auto-unseal kicks in immediately after init — no manual unseal keys required.
+
+If the script can't find the key file (default is `linux.pem` in the current directory), override the SSH command directly:
+
+```bash
+VAULT_SSH_COMMAND="ssh -i /path/to/key.pem ec2-user@<public-dns>" ./scripts/init-vault.sh
+```
 
 ### 4. Export a shell environment
 
@@ -143,16 +150,21 @@ All inputs are declared in [`variables.tf`](variables.tf).
 
 ## Vault Operations
 
+### Why initialization is a two-step process
+
+Terraform starts Vault but deliberately does not initialize it. This keeps the root token and recovery keys off the instance, out of cloud-init logs, and under operator control. With KMS auto-unseal, all future unseals are automatic — the only manual step is the first `vault operator init`.
+
 ### Initialize (first time)
 
 ```bash
 ./scripts/init-vault.sh
 ```
 
-- Reads `vault_ssh_command` from Terraform output
-- Checks whether Vault is already initialized
+- Reads `vault_ssh_command` from Terraform output (override with `VAULT_SSH_COMMAND` env var if needed)
+- Checks whether Vault is already initialized — safe to re-run
 - Runs `vault operator init -format=json` only when needed
 - Writes output to `.secrets/<workspace>-<vault-domain>-vault-init.json` (`chmod 600`)
+- After init, KMS unseals automatically — `vault status` will show `Sealed: false`
 
 > [!IMPORTANT]
 > Move the init output to an approved secret manager immediately. Do not leave it on your workstation.
