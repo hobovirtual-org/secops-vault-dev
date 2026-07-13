@@ -7,12 +7,4 @@ terraform {
       version = "= 6.53.0"
     }
   }
-
-  cloud {
-    organization = "crenaud-org"
-
-    workspaces {
-      name = "vault-ec2"
-    }
-  }
 }
