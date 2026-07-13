@@ -1,0 +1,12 @@
+project_name           = "vault-ec2"
+environment            = "dev"
+aws_region             = "us-east-1"
+ami_owner_account_id   = "888995627335"
+existing_key_pair_name = "your-existing-keypair"
+ssh_private_key_path   = "/Users/you/.ssh/linux.pem"
+route53_zone_name      = "example.com"
+vault_domain           = "vault.example.com"
+allowed_cidr_blocks    = ["203.0.113.10/32"]
+
+vault_edition = "enterprise"
+# vault_enterprise_license = "set-this-as-a-sensitive-variable-in-hcp-terraform-or-local-tfvars"

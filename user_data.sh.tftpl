@@ -1,0 +1,87 @@
+#!/bin/bash
+set -euxo pipefail
+exec > >(tee /var/log/vault-bootstrap.log | logger -t vault-bootstrap -s 2>/dev/console) 2>&1
+
+cat >/etc/yum.repos.d/hashicorp.repo <<'EOF'
+[hashicorp]
+name=HashiCorp Stable - $basearch
+baseurl=https://rpm.releases.hashicorp.com/RHEL/9/$basearch/stable
+enabled=1
+gpgcheck=1
+gpgkey=https://rpm.releases.hashicorp.com/gpg
+repo_gpgcheck=0
+EOF
+
+rpm --import https://rpm.releases.hashicorp.com/gpg
+
+dnf makecache --disablerepo='*' --enablerepo=hashicorp
+if ! dnf list --showduplicates ${vault_package} --disablerepo='*' --enablerepo=hashicorp | grep -q "${vault_version}"; then
+  echo "Requested package ${vault_package}-${vault_version} not found in HashiCorp repo"
+  dnf list --showduplicates ${vault_package} --disablerepo='*' --enablerepo=hashicorp || true
+  exit 1
+fi
+
+dnf install -y ${vault_package}-${vault_version}
+
+mkdir -p /opt/vault/data
+
+if [ "${vault_edition}" = "enterprise" ]; then
+  if [ -z "${vault_enterprise_license}" ]; then
+    echo "vault_enterprise_license is required when vault_edition is enterprise"
+    exit 1
+  fi
+
+  cat >/etc/vault.d/license.hclic <<EOF
+${vault_enterprise_license}
+EOF
+  chmod 600 /etc/vault.d/license.hclic
+
+  cat >/etc/vault.d/vault.hcl <<EOF
+disable_mlock = true
+ui            = true
+license_path  = "/etc/vault.d/license.hclic"
+
+listener "tcp" {
+  address     = "${vault_listener_address}:${vault_listener_port}"
+  tls_disable = 1
+}
+
+seal "awskms" {
+  region     = "${aws_region}"
+  kms_key_id = "${kms_key_id}"
+}
+
+storage "raft" {
+  path    = "/opt/vault/data"
+  node_id = "vault-1"
+}
+
+api_addr     = "https://${vault_domain}"
+cluster_addr = "https://127.0.0.1:8201"
+EOF
+else
+  cat >/etc/vault.d/vault.hcl <<EOF
+disable_mlock = true
+ui            = true
+
+listener "tcp" {
+  address     = "${vault_listener_address}:${vault_listener_port}"
+  tls_disable = 1
+}
+
+storage "file" {
+  path = "/opt/vault/data"
+}
+
+api_addr     = "https://${vault_domain}"
+cluster_addr = "https://127.0.0.1:8201"
+EOF
+fi
+
+chown -R vault:vault /opt/vault /etc/vault.d
+chmod 640 /etc/vault.d/vault.hcl
+
+systemctl enable vault
+systemctl restart vault
+systemctl status vault --no-pager || true
+rpm -qa | grep -i vault || true
