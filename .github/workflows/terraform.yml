@@ -28,4 +28,11 @@ jobs:
         run: terraform init -backend=false
 
       - name: Terraform Validate
+        env:
+          TF_VAR_allowed_cidr_blocks: '["0.0.0.0/0"]'
+          TF_VAR_ami_owner_account_id: "123456789012"
+          TF_VAR_existing_key_pair_name: "ci-key"
+          TF_VAR_project_name: "ci"
+          TF_VAR_route53_zone_name: "example.com"
+          TF_VAR_vault_domain: "vault.example.com"
         run: terraform validate
