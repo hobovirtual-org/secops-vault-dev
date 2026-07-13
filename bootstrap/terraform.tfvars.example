@@ -1,0 +1,10 @@
+project_name               = "vault-ec2"
+hcp_terraform_organization = "replace-with-your-org"
+hcp_terraform_workspace    = "vault-ec2"
+application                = "vault"
+owner                      = "team-devops"
+support_team               = "sre-team"
+cost_center                = "cc-104"
+data_classification        = "confidential"
+compliance                 = ["none"]
+environment                = "dev"

@@ -1,0 +1,42 @@
+# Terraform local cache and providers
+.terraform/
+.terraform.lock.hcl.bak
+
+# State files — never commit
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Plan files — may contain sensitive data
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files — local use only
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local variable files — may contain sensitive values
+*.tfvars
+*.auto.tfvars
+!terraform.tfvars.example
+!bootstrap/terraform.tfvars.example
+
+# HCP Terraform CLI config
+.terraformrc
+terraform.rc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
