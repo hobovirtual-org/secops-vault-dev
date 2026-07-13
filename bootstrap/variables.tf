@@ -108,3 +108,66 @@ variable "cloud_provider" {
     error_message = "cloud_provider must be one of: aws, azure, gcp, other."
   }
 }
+
+# ── Root module workspace variables ─────────────────────────────────────────
+
+variable "allowed_cidr_blocks" {
+  type        = list(string)
+  description = "CIDR blocks allowed to SSH to the Vault instance. Written to the workspace as a Terraform variable."
+}
+
+variable "ami_owner_account_id" {
+  type        = string
+  description = "AWS account ID that owns the approved base AMI."
+}
+
+variable "aws_region" {
+  type        = string
+  description = "AWS region for all resources."
+  default     = "us-east-1"
+}
+
+variable "existing_key_pair_name" {
+  type        = string
+  description = "Existing EC2 key pair name to attach to the Vault instance."
+}
+
+variable "instance_type" {
+  type        = string
+  description = "EC2 instance type for the Vault server."
+  default     = "t3.small"
+}
+
+variable "route53_zone_name" {
+  type        = string
+  description = "Public Route53 hosted zone name that contains vault_domain."
+}
+
+variable "ssh_private_key_path" {
+  type        = string
+  description = "Local path to the SSH private key used with the vault_ssh_command output."
+  default     = "linux.pem"
+}
+
+variable "vault_domain" {
+  type        = string
+  description = "Fully qualified domain name to publish in Route53 and associate with the ACM certificate and ALB."
+}
+
+variable "vault_edition" {
+  type        = string
+  description = "Vault edition: 'enterprise' or 'community'."
+  default     = "enterprise"
+
+  validation {
+    condition     = contains(["enterprise", "community"], var.vault_edition)
+    error_message = "vault_edition must be 'enterprise' or 'community'."
+  }
+}
+
+variable "vault_enterprise_license" {
+  type        = string
+  description = "Vault Enterprise license string. Stored as a sensitive workspace variable. Leave null for community edition."
+  default     = null
+  sensitive   = true
+}
