@@ -101,26 +101,6 @@ The Terraform credentials must be able to manage:
 
 ## Quick start
 
-### 0. Bootstrap the HCP Terraform workspace (once)
-
-The HCP Terraform workspace must exist and be tagged **before** the main deployment runs. A separate bootstrap config in [`bootstrap/`](bootstrap/) owns this step.
-
-```bash
-# Copy and fill the bootstrap variable file (never commit it)
-cp bootstrap/terraform.tfvars.example bootstrap/terraform.tfvars
-
-# Authenticate with a token that has workspace creation rights
-export TFE_TOKEN="<your-org-or-team-token>"
-
-# Create/update the workspace and apply tags
-cd bootstrap
-terraform init
-terraform apply
-cd ..
-```
-
-The bootstrap config only needs to be re-run when workspace metadata (tags, name) changes. It does **not** need to run before every deployment apply.
-
 ### 1. Create a variable file
 
 Copy [`terraform.tfvars.example`](terraform.tfvars.example) to a local non-committed tfvars file:
@@ -190,7 +170,6 @@ All inputs are declared in [`variables.tf`](variables.tf).
 |---|---|---|
 | `ami_name_pattern` | `hc-base-rhel-9-x86_64-*` | Used with `most_recent = true` to select the newest approved image |
 | `aws_region` | `us-east-1` | Region for all resources |
-| `compliance` | `[]` | One or more of `hipaa`, `pci-dss`, `soc2`, `none`; joined into one workspace tag value |
 | `environment` | `dev` | Validated as `dev`, `staging`, `prod`, or `sandbox` |
 | `instance_type` | `t3.small` | EC2 instance type |
 | `root_volume_size` | `20` | Root disk size in GiB |
@@ -201,35 +180,6 @@ All inputs are declared in [`variables.tf`](variables.tf).
 | `ssh_private_key_path` | `linux.pem` | Local path used by [`vault_ssh_command`](outputs.tf:26) |
 | `vault_version` | `1.21.4` | Community package version |
 | `vpc_cidr` | `10.42.0.0/16` | VPC CIDR |
-
-### Bootstrap variables (HCP Terraform workspace tagging)
-
-Workspace creation and tagging are handled by the separate [`bootstrap/`](bootstrap/) config. The relevant variables live in [`bootstrap/variables.tf`](bootstrap/variables.tf).
-
-| Name | Description |
-|---|---|
-| `hcp_terraform_organization` | HCP Terraform organization name |
-| `hcp_terraform_workspace` | Workspace name to create/update (default: `vault-ec2`) |
-| `application` | Application or service value for workspace tagging |
-| `cost_center` | Cost center value, validated like `cc-104` |
-| `data_classification` | One of `public`, `internal`, `confidential`, `pii` |
-| `owner` | Owning team or contact for workspace tagging |
-| `support_team` | Support team slug for workspace tagging |
-| `compliance` | Set of `hipaa`, `pci-dss`, `soc2`, or `none` |
-
-The `owner` value is normalized in [`bootstrap/main.tf`](bootstrap/main.tf:2) so email-style inputs such as `crenaud@ibm.com` become tag-safe values like `crenaud_at_ibm_com`.
-
-Applied tag names follow the `key:value` convention:
-
-- `environment:<value>`
-- `project:<value>`
-- `application:<value>`
-- `owner:<value>`
-- `support_team:<value>`
-- `cost_center:<value>`
-- `data_classification:<value>`
-- `compliance:<value>`
-- `automation:terraform`
 
 ---
 
@@ -383,16 +333,13 @@ For Enterprise with KMS auto-unseal, [`vault status`](https://developer.hashicor
 
 ## HCP Terraform notes
 
-The Terraform configuration is intended to work well with HCP Terraform.
+The Terraform configuration runs inside HCP Terraform. The workspace and its variable set are managed outside this repository.
 
 Recommended setup:
 
-1. Run the [`bootstrap/`](bootstrap/) config once to create and tag the workspace
-2. Set required variables in the workspace
-3. Mark [`vault_enterprise_license`](variables.tf:99) as sensitive if using Enterprise
-4. Prefer dynamic AWS credentials instead of long-lived access keys
-
-Note that the [`cloud` block](terraform.tf) cannot read Terraform variables directly. Use static values there or the documented runtime environment overrides.
+1. Set required variables in the workspace or an attached variable set
+2. Mark [`vault_enterprise_license`](variables.tf:99) as sensitive if using Enterprise
+3. Prefer dynamic AWS credentials instead of long-lived access keys
 
 ---
 

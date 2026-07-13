@@ -24,7 +24,6 @@ override.tf.json
 *.tfvars
 *.auto.tfvars
 !terraform.tfvars.example
-!bootstrap/terraform.tfvars.example
 
 # HCP Terraform CLI config
 .terraformrc
