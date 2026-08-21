@@ -3,18 +3,18 @@
 **Single-node HashiCorp Vault on AWS EC2, fronted by an Application Load Balancer with ACM-managed TLS and AWS KMS auto-unseal.**
 
 ![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.9.0-7A3FF2)
-![AWS Provider](https://img.shields.io/badge/AWS%20Provider-6.54.0-1F6FEB)
+![AWS Provider](https://img.shields.io/badge/AWS%20Provider-6.61.0-1F6FEB)
 ![HCP Terraform](https://img.shields.io/badge/HCP%20Terraform-enabled-2EA043)
 ![CI](https://github.com/hobovirtual-org/secops-vault-dev/actions/workflows/terraform.yml/badge.svg)
 
-![Vault on EC2 architecture](docs/architecture.svg)
+![Vault on EC2 architecture](docs/architecture-sketch.png)
 
 ## At a Glance
 
 | | |
 |---|---|
 | **Workspace** | `security-vault-dev` (HCP Terraform) |
-| **AWS Provider** | `hashicorp/aws = 6.54.0` |
+| **AWS Provider** | `hashicorp/aws = 6.61.0` |
 | **Terraform** | `>= 1.9.0` |
 | **Vault editions** | `enterprise`, `community` |
 | **Required inputs** | `allowed_cidr_blocks`, `ami_owner_account_id`, `existing_key_pair_name`, `project_name`, `route53_zone_name`, `vault_domain` |
@@ -54,6 +54,12 @@ After apply completes, Vault is running but **not yet initialized** — this is 
 ```
 
 This connects to the instance over SSH, runs `vault operator init`, and writes the output to `.secrets/`. KMS auto-unseal kicks in immediately after init — no manual unseal keys required.
+
+For sandbox-style redeployments where the init output file already exists, pass `--overwrite` to replace the existing file:
+
+```bash
+./scripts/init-vault.sh --overwrite
+```
 
 If the script can't find the key file (default is `linux.pem` in the current directory), override the SSH command directly:
 

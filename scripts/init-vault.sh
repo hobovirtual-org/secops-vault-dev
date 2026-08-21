@@ -1,8 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  echo "Usage: $0 [--overwrite]" >&2
+}
+
 SECRETS_DIR=".secrets"
 SSH_COMMAND="${VAULT_SSH_COMMAND:-}"
+OVERWRITE=false
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --overwrite)
+      OVERWRITE=true
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+  shift
+done
 
 WORKSPACE_NAME="${TF_WORKSPACE:-default}"
 if terraform workspace show >/dev/null 2>&1; then
@@ -51,8 +69,8 @@ else
   exit 1
 fi
 
-if [ -e "${OUTPUT_FILE}" ]; then
-  echo "Refusing to overwrite existing ${OUTPUT_FILE}" >&2
+if [ -e "${OUTPUT_FILE}" ] && [ "${OVERWRITE}" != true ]; then
+  echo "Refusing to overwrite existing ${OUTPUT_FILE} (pass --overwrite to replace it)" >&2
   exit 1
 fi
 
