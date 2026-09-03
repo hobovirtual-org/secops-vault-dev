@@ -208,8 +208,9 @@ vault status
 | Secure metadata | IMDSv2 enforced (`http_tokens = required`) |
 | Encrypted storage | Root EBS volume encrypted, `gp3` |
 | No hardcoded secrets | All sensitive values via HCP Terraform workspace variables |
-| Auto-unseal | KMS key with rotation enabled; IAM role scoped to that key only |
-| Minimal IAM | Instance role grants only `kms:DescribeKey`, `kms:Encrypt`, `kms:Decrypt`, `kms:GenerateDataKey` |
+| Auto-unseal | KMS key with rotation enabled; IAM scoped to that key only |
+| IAM for AWS auth | `iam:GetRole`, `iam:GetUser` — Vault resolves bound ARNs at role registration time |
+| IAM for login verification | `sts:GetCallerIdentity` — Vault verifies EC2 identity on every login |
 
 ## What Terraform Creates
 
@@ -226,7 +227,9 @@ vault status
 | `aws_lb_target_group` | HTTP target group with `/v1/sys/health` health check |
 | `aws_lb_listener` | HTTPS listener with TLS 1.3 policy |
 | `aws_kms_key` + `aws_kms_alias` | Auto-unseal key with rotation enabled |
-| `aws_iam_role` + policy + profile | EC2 instance role scoped to the KMS key |
+| `aws_iam_role` + profile | EC2 instance role |
+| `aws_iam_role_policy` (vault-unseal) | KMS permissions for auto-unseal |
+| `aws_iam_role_policy` (vault-aws-auth) | `iam:GetRole`, `iam:GetUser`, `sts:GetCallerIdentity` for AWS auth method |
 | `aws_instance` | RHEL 9, IMDSv2, encrypted root volume, fixed private IP |
 
 ## HCP Terraform

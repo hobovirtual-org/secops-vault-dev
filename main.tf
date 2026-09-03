@@ -340,6 +340,35 @@ resource "aws_iam_role_policy" "vault_unseal" {
   })
 }
 
+# Vault AWS auth method — Vault calls iam:GetRole / iam:GetUser to resolve
+# bound_iam_principal_arns to internal IDs when roles are registered.
+# Also needs sts:GetCallerIdentity to verify incoming EC2 login requests.
+resource "aws_iam_role_policy" "vault_aws_auth" {
+  name = "${local.name_prefix}-vault-aws-auth"
+  role = aws_iam_role.ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "VaultAWSAuthResolveARN"
+        Effect = "Allow"
+        Action = [
+          "iam:GetRole",
+          "iam:GetUser",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid      = "VaultAWSAuthVerifyLogin"
+        Effect   = "Allow"
+        Action   = "sts:GetCallerIdentity"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "ec2" {
   name = "${local.name_prefix}-instance-profile"
   role = aws_iam_role.ec2.name
